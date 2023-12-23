@@ -1,0 +1,113 @@
+时间复杂度T(n)=O(f(n)),f(n)可以为1,logn,n,n^2,n^3,2^n,n!等等，n^2通常转化为nlogn复杂度进行设计算法,若f(n)为n的多项式，就取n幂次最大的那项
+若两段算法分别复杂度为T1,T2，当这两段算法连续执行时，新复杂度为T1和T2的最大值；当这两段算法嵌套执行时，新复杂度为T1*T2；循环的时间复杂度为循环次数*循环体中算法的复杂度；if-else结构的复杂度=max(if的条件判断复杂度，两个分支部分的复杂度)
+
+
+最大子列和问题：给定一个int型的序列，它有很多连续子列，对每个连续子列中的数累加，求出最大值，若序列中的所有数都小于0，就返回0
+
+第一种方法：把所有的连续子列和都算出来，找其中最大的一个
+int max_sub_sum(int a[], int n)//a为给定序列，n为序列长度
+{
+	int this_sum, max_sum = 0;//this_sum是每个子列的和，max_sum是返回的最大值
+	int i, j, k;  //循环思路：用两层循环表示以第一个数开始的所有子列.....一直到最后一个数开始的所有子列
+	for(i=0;i<n;i++)//i是子列左端位置
+		for (j = i; j < n; j++)//j是子列右端位置  
+		{
+			this_sum = 0;
+			for (k = i; k <= j; k++)
+				this_sum += a[k];
+			if (this_sum > max_sum)//若有新最大值就更新max_sum
+				max_sum = this_sum;
+		}
+	return max_sum;
+}
+有三层循环，一次最内循环的复杂度是n(+=运算），所以总的复杂度是n^3
+问题出在：当已经计算完从i到j的子列和后，下一个计算从i到j+1的子列和仍然是从头加到尾，而不是用从i到j的子列和直接加上第j+1个数----->所以for (k = i; k <= j; k++)是没有必要的
+
+改进：把循环改成
+	for(i=0;i<n;i++)
+	{
+		this_sum = 0;//是从第i个数开始的子列的和
+		for (j = i; j < n; j++)
+		{	
+			this_sum += a[j];
+			//对于从i到j的子列，只要在从i到j-1的子列和基础上加上a[j]即可
+			if (this_sum > max_sum)//判断操作进行次数是不变的，保证准确性
+				max_sum = this_sum;
+		} 
+	}
+此时复杂度为n^2
+
+第二种方法：分治法，把大块分成小块进行计算
+在这个问题中，把序列从中间分开，分别计算左面和右面序列的最大子列和，再计算跨越边界的最大子列和，最后的结果就是这3个数中最大的那个。再分开计算时利用递归，8->4->2->1的方法，如给定4 -3 5 -2 -1 2 6 -2 共8个数，先算最左面4 -3 5 -2，再把它一分为二，4 -3|5 -2，可以求出这两个序列的最大子列和分别为4和5，再求跨越边界的子列和--从中线的那个数开始，向左面延伸的子列肯定有一个最大和，再从中线的那个数的往右一个数开始，向右面延伸的子列也肯定有一个最大和，这两个最大和相加就是跨越边界的最大子列和（因为只要跨越边界，就必然能被分成左右两部分、必然包含最中间的两个数）。
+最后推导到函数中，只需要写跨越边界部分的函数，左右两部分序列的最大子列和都直接递归就可求出
+运算部分：
+int DivideAndConquer(int List[], int left, int right)
+{ 
+	int MaxLeftSum, MaxRightSum; /* 存放左右序列的最大子列和 */
+	int MaxLeftBorderSum=0, MaxRightBorderSum=0; /*存放跨分界线的左右序列的最大子列和*/
+	int center, i;
+
+	if (left == right) //递归的终止条件，子列只有1个数字
+	{ 
+		if (List[left] > 0)  return List[left];//最大子列和一定大于0，因为肯定有正数，没正数就直接返回0了
+		else return 0;
+	}
+
+	//上面已经排除了递归结束的情况，所以下面的都是未结束时的情况
+
+	center = (left + right) / 2; /* 找到中分点 */
+	/* 递归求得两边子列的最大和 */
+	//若一共奇数个数，中间那个数算左面序列
+	MaxLeftSum = DivideAndConquer(List, left, center);
+	MaxRightSum = DivideAndConquer(List, center + 1, right);
+
+	/* 下面求跨分界线的最大子列和 */
+	//先扫描左面的	
+	int LeftBorderSum = 0;
+	for (i = center; i >= left; i--) { /* 从中线向左扫描 */
+		LeftBorderSum += List[i];
+		if (LeftBorderSum > MaxLeftBorderSum)
+			MaxLeftBorderSum = LeftBorderSum;
+	}                                                                
+	//再扫描右面的
+	int RightBorderSum = 0;
+	for (i = center + 1; i <= right; i++) { /* 从中线向右扫描 */
+		RightBorderSum += List[i];
+		if (RightBorderSum > MaxRightBorderSum)
+			MaxRightBorderSum = RightBorderSum;
+	} 
+
+	/* 返回"治"的结果 */
+	return Max3(MaxLeftSum, MaxRightSum, MaxLeftBorderSum + MaxRightBorderSum);
+}//Max3为求三个整数中的最大值
+函数调用：
+int MaxSubseqSum3(int List[], int N)
+{ /* 保持与前2种算法相同的函数接口 */
+	return DivideAndConquer(List, 0, N - 1);
+}
+
+这中递归类算法的复杂度分析：当整个问题里有n个数字时，如果把复杂度记作T(N)，则得到各半边数字的时间复杂度就时T(N/2),因为规模减半；又可以看到跨边界部分的复杂度为O(N)（即n的常数倍，因为只有一层循环），由此得到T(N)=2T(N/2)+cN，推导可知该算法的复杂度为nlogn 
+
+
+第三中算法：在线处理
+int max_sub_sum4(int a[], int n)
+{
+	int this_sum = 0, max_sum = 0;
+	for (int i = 0; i < n; i++)
+	{
+		this_sum += a[i];  //向右累加
+		if (this_sum > max_sum)
+			max_sum = this_sum;  //发现更大和就更新max_sum
+		else if (this_sum < 0)  //如果当前子列和为负，则不可能使后面的部分和增大，抛弃这个子列
+			this_sum = 0;
+	}
+	return max_sum;
+}
+
+设有8个数的序列-1 3 -2 4 -6 1 6 -1 ，第一次this_sum += a[i]后，this_sum为-1，比0小，若子列以它为起点，还不如不包含它，于是舍去，同时把this_sum重置为0；第二次加完后this_sum为3，比0大，max_sum被赋值为3；第三次加完后this_sum为1，比max_sum小，于是max_sum不变，虽然第三个数-2小于0，但和前面的3组合到一起仍为1正数，所以3 -2 这个子列是有价值的，this_sum保留；第4次加完后this_sum为5，更新max_sum为5；第5次加完后this_sum为-1，说明3 -2 4 -6这个子列无价值，重置this_sum，而max_sum保留为5；再加2次，this_sum为7，比5大，则max_sum更新为7；最后一次加-1不改变max_sum的值
+
+在线的意思是指每输入一个数就进行即时处理，在任何一个地方中止输入，算法都能给出当前正确的解。
+由于只进行了一次for循环，复杂度为n，也是该问题的最优解，因为读取数据就需要n的时间
+
+
+

@@ -1,0 +1,35 @@
+输出二叉树中的叶子节点（没有儿子的节点）：在二叉树遍历算法中的printf前添加条件，检测是否为叶子节点
+void pre_order_traversal(struct tree_node* root)
+{
+	if (root != NULL)
+	{
+		if(root->left==NULL&&root->right==NULL)
+			printf("%d", root->data);
+		pre_order_traversal(root->left);
+		pre_order_traversal(root->right);
+	}
+}
+
+求二叉树的高度：用递归来做：一个二叉树的高度=max(左右两个子树的高度)+1
+int post_order_get_height(struct tree_node* root)
+{
+	int left_height, right_height, max_height;
+	if (root != NULL)
+	{
+		left_height = post_order_get_height(root->left);
+		right_height = post_order_get_height(root->right);
+		max_height = (left_height > right_height) ? left_height : right_height;
+		return max_height + 1;
+	}
+	else return 0;//空树深度为0
+}
+
+二元运算表达式树：运算数放在叶子节点上，两个运算数的父结点是运算符，如
+                                      +
+                                    ↙↘
+		       a   *
+		       ↙↘
+		           b   c
+若用先序遍历，得到+a*bc（前缀表达式）；中序遍历，得到a+b*c（中缀表达式）；后序遍历，得到abc*+（后缀表达式）。因为这里面没有括号，所以中缀表达式可能出现(a+b)*c写成a+b*c的情况，是不准的，解决方法：输出左子树的时候，先输出个左括号，左子树结束的时候再加个右括号
+
+由两种遍历序列确定二叉树：当给定的两种遍历中有一种是中序遍历就可以确定唯一二叉树。最简单的例子，先序：ab，后序：ba，当b是a的左或右儿子时都可以；先序是根 左 右，后序是左 右 根，无法区分左 右的关系

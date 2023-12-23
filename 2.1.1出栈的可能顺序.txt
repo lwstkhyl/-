@@ -1,0 +1,41 @@
+给出若干序列，检测每个序列（每个数字池）能否通过指定大小的栈pop得到，入栈顺序：1到N。
+输入第一行：M（栈的最大容量）、N（要检测的数字有多少个）、K（有多少组要检测的数字）；后K行每行N个数字，代表要检测的数组；输出：如果可以通过栈的pop得到则输出YES，否则输出NO
+
+思路:不是找不能/可以出栈的序列规律，而是对每一个给定序列进行模拟，来判断是否可行。给定数列是通过在1、2...依次入栈的过程中，在某个数入栈后立即抛出，之后要么接着抛出栈中的下一个数，要么继续入栈过程。要想逆推这个过程，就需要我们把数依次入栈，同时比较这个数与给定序列的第一个数，若相等就抛出、并接着比较栈内的下一个数与给定序列的下一个数，若不等就继续入栈。直至全部比较完成——该序列满足条件，或者入栈过程中栈内元素数量超过了M/未全部比较完成而入栈过程已完毕——不满足条件
+#include <iostream>
+#include <stack>
+#include <vector>
+using namespace std;
+int main() {
+	int M, N, K;
+	cin >> M >> N >> K;
+	while (K--)   //k是总共需要判断的序列数量，k--控制判断次数
+	{
+		vector<int> pool(N, 0);
+		// 输入一个数字池
+		for (int i = 0; i < N; ++i)
+			cin >> pool[i];
+		int flag = 1, ru_zhan = 1;//ru_zhan是入栈的那个数
+		int pa = 0;//指向pool中的元素即pool中的第几个元素
+		stack<int> stack_now;
+		while (ru_zhan <= N)//最后一个入栈的数是N
+		{
+			stack_now.push(ru_zhan);
+			ru_zhan++;
+			if (stack_now.size() > M)  //如果栈中的元素数量超过了最大允许元素数，就不行.注意这里不是栈顶值比M大
+			{
+				flag = 0;
+				break;
+			}
+			while (!stack_now.empty() && pa < N && pool[pa] == stack_now.top())//当栈顶元素等于要验证的第pa个pool中元素，且pa在规定范围内（未验证完）时，
+			{
+				pa++;//该元素验证成功，该验证下一个元素
+				stack_now.pop();//栈顶元素被抛出
+			}//这里要用循环，因为可能入栈一个元素但抛出多个元素
+		}
+		if (pa < N) flag = 0;  //未验证完，不行
+		if (flag==0) cout << "NO" << endl;
+		else cout << "YES" << endl;
+	}
+	return 0;
+}
